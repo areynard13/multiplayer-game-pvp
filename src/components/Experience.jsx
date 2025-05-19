@@ -48,7 +48,6 @@ export const Experience = () => {
         shadow-mapSize-height={4096}
         shadow-bias={-0.0001}
       />
-      <OrbitControls />
       <Map />
       {players.map(({state, joystick}, idx) => (
         <CharacterController
