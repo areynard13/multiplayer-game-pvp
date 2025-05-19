@@ -16,7 +16,7 @@ export const CharacterController = ({
             <group ref={group} {...props}>
                 <group ref={character}>
                     <CharacterSoldier
-                        color={state.state.profil?.color}
+                        color={state.state.profile?.color}
                         animation={animation}
                     />
                 </group>
