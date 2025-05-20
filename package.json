@@ -16,14 +16,16 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "three": "^0.173.0",
-    "three-stdlib": "^2.36.0",
-    "yarn": "^1.22.22"
+    "three-stdlib": "^2.36.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.40",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^4.3.4",
     "globals": "^15.15.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.3",
     "vite": "^6.2.0"
   }
 }

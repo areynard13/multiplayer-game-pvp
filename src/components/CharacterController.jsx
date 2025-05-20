@@ -3,8 +3,8 @@ import { useRef } from 'react';
 import { CharacterSoldier } from "./CharacterSoldier";
 import { useEffect, useState } from "react";
 import { RigidBody, CapsuleCollider, vec3 } from "@react-three/rapier";
-import { useFrame } from "@react-three/fiber";
-import { CameraControls } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { Billboard, CameraControls, Text } from "@react-three/drei";
 
 const MOVEMENT_SPEED = 200;
 const FIRE_RATE = 380;
@@ -20,6 +20,7 @@ export const CharacterController = ({
         joystick,
         usePlayer,
         onFire,
+        onKilled,
         ...props
     }) => {
         const group = useRef();
@@ -28,6 +29,34 @@ export const CharacterController = ({
         const controls = useRef();
         const lastShoot = useRef(0);
         const [animation, setAnimation] = useState("Idle");
+
+        const scene = useThree((state) => state.scene)
+
+        const spawnRandomly = () => {
+            const spawns = [];
+            for (let i = 0; i < 1000; i++) {
+            const spawn = scene.getObjectByName(`spawn_${i}`);
+            if (spawn) {
+                spawns.push(spawn);
+            } else {
+                break;
+            }
+            }
+            const spawnPos = spawns[Math.floor(Math.random() * spawns.length)].position;
+            rigidbody.current.setTranslation(spawnPos);
+        };
+
+        useEffect(() => {
+            if (isHost()) {
+                spawnRandomly();
+            }
+        }, []);
+
+        useFrame((_, delta) => {
+            if (!rigidbody.current) {
+                return;
+            }
+        })
 
         useFrame((_, delta) => {
 
@@ -44,6 +73,11 @@ export const CharacterController = ({
                 playerWorldPos.z,
                 true
             );
+            }
+
+            if (state.state.dead) {
+                setAnimation("Death");
+                return;
             }
 
             const angle = joystick.angle();
@@ -98,8 +132,33 @@ export const CharacterController = ({
                  colliders={false}
                  linearDamping={12}
                  lockRotations
-                 type={isHost() ? "dynamic" : "kinematicPosition"} 
+                 type={isHost() ? "dynamic" : "kinematicPosition"}
+                 onIntersectionEnter={({other}) => {
+                    if (
+                        isHost() &&
+                        other.rigidBody.userData.type === "bullet" &&
+                        state.state.health > 0
+                    ) {
+                        const newHealth = state.state.health - other.rigidBody.userData.damage;
+                        if (newHealth <= 0) {
+                            state.setState("deaths", state.state.deaths + 1);
+                            state.setState("dead", true);
+                            state.setState("health", 0);
+                            rigidbody.current.setEnabled(false);
+                            setTimeout(() => {
+                                spawnRandomly();
+                                rigidbody.current.setEnabled(true);
+                                state.setState("health", 100)
+                                state.setState("dead", false)
+                            }, 2000);
+                            onKilled(state.id, other.rigidBody.userData.player)
+                        } else {
+                            state.setState("health", newHealth)
+                        }
+                    }
+                 }}
                 >
+                    <PlayerInfo state={state.state} />
                     <group ref={character}>
                         <CharacterSoldier
                             color={state.state.profile?.color}
@@ -144,5 +203,26 @@ const Crosshair = (props) => {
         <meshBasicMaterial color="black" opacity={0.2} transparent />
       </mesh>
     </group>
+  );
+};
+
+const PlayerInfo = ({ state }) => {
+  const health = state.health;
+  const name = state.profile.name;
+  return (
+    <Billboard position-y={2.5}>
+      <Text position-y={0.36} fontSize={0.4}>
+        {name}
+        <meshBasicMaterial color={state.profile.color} />
+      </Text>
+      <mesh position-z={-0.1}>
+        <planeGeometry args={[1, 0.2]} />
+        <meshBasicMaterial color="black" transparent opacity={0.5} />
+      </mesh>
+      <mesh scale-x={health / 100} position-x={-0.5 * (1 - health / 100)}>
+        <planeGeometry args={[1, 0.2]} />
+        <meshBasicMaterial color="red" />
+      </mesh>
+    </Billboard>
   );
 };

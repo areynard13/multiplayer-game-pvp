@@ -21,7 +21,7 @@ export const Experience = () => {
 
   useEffect(() => {
     setNetworkBullets(bullets);
-  })
+  }, [bullets])
 
   const start = async () => {
     await insertCoin();
@@ -48,6 +48,11 @@ export const Experience = () => {
     });
   }, []);
 
+  const onKilled = (_victim, killer) => {
+    const killerState = players.find((p) => p.state.id === killer).state;
+    killerState.setState("kills", killerState.state.kills + 1);
+  }
+
   return (
     <>
       <directionalLight
@@ -68,11 +73,11 @@ export const Experience = () => {
       {players.map(({state, joystick}, idx) => (
         <CharacterController
           key={state.id}
-          position-x={idx * 2}
           state={state}
           joystick={joystick}
           usePlayer={state.id === myPlayer()?.id}
           onFire={onFire}
+          onKilled={onKilled}
         />
       ))}
       {(isHost() ? bullets : networkBullets).map((bullet) => (
